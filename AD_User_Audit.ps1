@@ -19,6 +19,6 @@ foreach($server in $servers){
         ‘Name’,’DisplayName’,’SamAccountName’,'Enabled','PasswordLastSet','PasswordNeverExpires',
         @{Name='IsServiceAccount';Expression={$_.Description -like "*service account*"}},
         @{Name='IsDomainOrEnterpriseOrSchemaAdmin';Expression={[string]::join(";",($_.MemberOf)) -match "(Domain Admins|Enterprise Admins|Schema Admins)"}}, 
-        @{Name=’MemberOf';Expression={[string]::join(“;”, ($_.MemberOf))}}
+        @{Name=’MemberOf';Expression={$_.MemberOf -join ';'}}
 }
 $output | export-csv -NoTypeInformation .\adoutput.csv
