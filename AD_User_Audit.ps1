@@ -17,7 +17,7 @@ $output = @()
 foreach($server in $servers){
     $output += Get-ADUser -Properties * -Filter * -Server $server | Select @{Name='Server';Expression={$server}}, @{Name='Domain';Expression={(Get-ADDomain (($_.DistinguishedName.Split(",") | ? {$_ -like "DC=*"}) -join ",")).NetBIOSName}}, 
         ‘Name’,’DisplayName’,’SamAccountName’,'Enabled','PasswordLastSet','PasswordNeverExpires',
-        @{Name='IsServiceAccount';Expression={$_.Description -like "*service account*"}}
+        @{Name='IsServiceAccount';Expression={$_.Description -like "*service account*"}},
         @{Name='IsDomainOrEnterpriseOrSchemaAdmin';Expression={[string]::join(";",($_.MemberOf)) -match "(Domain Admins|Enterprise Admins|Schema Admins)"}}, 
         @{Name=’MemberOf';Expression={[string]::join(“;”, ($_.MemberOf))}}
 }
