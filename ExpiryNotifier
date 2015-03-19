@@ -1,0 +1,48 @@
+###########################################################################################
+# Title: ExpiryNotifier										                       	                        #
+# Author: Aaron J. Katz												                                            #
+# Description: Email users with expiring passwords. This should be scheduled daily        #
+# Version: 1.0.                                                                           #
+# References:                                                                             #
+#    http://community.spiceworks.com/scripts/show/1482-password-expiration-notification	  #												                       #
+###########################################################################################
+
+import-module ActiveDirectory
+
+$maxPasswordAge = (Get-ADDefaultDomainPasswordPolicy).MaxPasswordAge
+$warningDayThreshold = 5 # Warn when 5 days are remaining
+$fromEmail = ""
+$smtpServer = ""
+$techContact = ""
+
+$servers = ""
+
+foreach($server in $servers){
+    $users = Get-ADUser -filter * -properties GivenName, Name, PasswordNeverExpires, PasswordExpired, PasswordLastSet, EmailAddress |
+        where-object {($_.Enabled -eq "True") -and ($_.PasswordNeverExpires -eq "False") -and
+            ($_.PasswordExpired -eq "False")}
+    foreach($user in $users){
+        $expiryDate = $user.PasswordLastSet + $maxPasswordAge
+        $daysLeft = ($expiryDate-(get-date)).days
+        if($daysLeft -le $warningDayThreshold -and $daysLeft -gt 0) {
+            $username = $user.GivenName
+            $message = "
+                <p>Hi $username,</p>
+                <p>Your Windows login credential for $server domain will expire in $daysLeft days. Please press CTRL+ALT+DEL to change your password.</p>
+                <p><strong>Note:</strong> If this password is for a domain other than your standard domain, plesae utilize the password reset tool located <a href='#'>here</a> to reset your password.</p>
+                <br><br>
+                <p><strong>Password Requirements</strong><br>
+                    <ul>
+                        <li>Must not reuse one of your last 10 passwords</li>
+                        <li>Minimum of 7 characters</li>
+                        <li>Must utilize
+                    </ul>
+                </p> 
+                <br><br>
+                <p>For any assistance, please contact your friendly neighborhood $techContact</p>
+            "
+            Send-MailMessage -to $user.EmailAddress -from $fromEmail -Subject: "Password Expiry Notice: Your password will expire soon!"
+                -body $message -smtpserver $smtpServer -BodyAsHtml
+        }
+        
+    }
